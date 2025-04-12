@@ -1,0 +1,6 @@
+#
+# ifn_copysign not work correctly for ilp32f
+#
+FAIL: gcc.dg/tree-ssa/abs-4.c
+FAIL: gcc.dg/tree-ssa/copy-sign-2.c
+FAIL: gcc.dg/tree-ssa/backprop-6.c

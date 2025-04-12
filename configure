@@ -603,13 +603,21 @@ enable_llvm
 enable_gdb
 with_guile
 with_system_zlib
+configure_pkgversion
+enable_install_strip
+enable_libccrt
+build_libgcctf
+configure_gcc_dep_libs
 configure_host
 target_cxxflags
 target_cflags
 cmodel
 gcc_checking
-musl_multilib_names
+thead32_multilib_names
+thead64_multilib_names
 newlib_multilib_names
+musl32_multilib_names
+musl64_multilib_names
 glibc_multilib_names
 multilib_flags
 extra_multilib_test
@@ -657,6 +665,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -694,6 +703,9 @@ with_cmodel
 with_target_cflags
 with_target_cxxflags
 with_host
+with_gcc_dep_libs
+enable_install_strip
+with_pkgversion
 with_system_zlib
 with_guile
 enable_gdb
@@ -760,6 +772,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1012,6 +1025,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1149,7 +1171,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1302,6 +1324,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1335,11 +1358,12 @@ Optional Features:
                           [--disable-linux]
   --enable-debug-info     build glibc/musl/newlibc/libgcc with debug
                           information
-  --enable-multilib       build both RV32 and RV64 runtime libraries (only
-                          RV64 for musl libc) [--disable-multilib]
+  --enable-multilib       build both RV32 and RV64 runtime libraries
+                          [--disable-multilib]
   --enable-gcc-checking   Enable gcc internal checking, it will make gcc very
                           slow, only enable it when developing gcc
                           [--disable-gcc-checking]
+  --disable-install-strip Don't strip the executable file
   --disable-gdb           Don't build GDB, as it's not upstream
   --enable-llvm           Build LLVM (clang)
   --enable-host-gcc       Build host GCC to build cross toolchain
@@ -1374,6 +1398,9 @@ Optional Packages:
   --with-host=x86_64-w64-mingw32
                           Sets the host for the tools, you probably want
                           nothing
+  --with-gcc-dep-libs     Set prefix directory for installed GMP/MPFR/MPC
+                          package
+  --with-pkgversion       Set toolchain package version
   --without-system-zlib   use the builtin copy of zlib from GCC
   --with-guile            Set which guile to use, if any
   --with-gcc-src          Set gcc source path, use builtin source by default
@@ -3467,7 +3494,7 @@ else
 fi
 
 if test "x$enable_multilib" != xno; then :
-  glibc_multilib_names="rv32imac-ilp32 rv32imafdc-ilp32d rv64imac-lp64 rv64imafdc-lp64d"
+  glibc_multilib_names="rv64imac-lp64 rv64imafdc-lp64d rv32imafdc-ilp32d rv32imac-ilp32"
 
 else
   glibc_multilib_names="$with_arch-$with_abi"
@@ -3475,7 +3502,25 @@ else
 fi
 
 if test "x$enable_multilib" != xno; then :
-  newlib_multilib_names="rv32i-ilp32 rv32iac-ilp32 rv32im-ilp32 rv32imac-ilp32 rv32imafc-ilp32f rv64imac-lp64 rv64imafdc-lp64d"
+  musl64_multilib_names="rv64imac-lp64 rv64imafdc-lp64d"
+
+else
+  musl64_multilib_names="$with_arch-$with_abi"
+
+fi
+
+if test "x$enable_multilib" != xno; then :
+  musl32_multilib_names="rv32imafdc-ilp32d rv32imac-ilp32"
+
+else
+  musl32_multilib_names="$with_arch-$with_abi"
+
+fi
+
+if test "x$enable_multilib" != xno; then :
+  newlib_multilib_names="rv32ec-ilp32e rv32emc-ilp32e rv32i-ilp32 rv32im-ilp32 rv32iac-ilp32 rv32imac-ilp32 rv32imafc-ilp32f \
+                                         rv32imafdc-ilp32d rv32imafdc_xtheade-ilp32d rv32imafdc_zfh_xtheadc-ilp32d \
+                                         rv64imac-lp64 rv64imac_xtheadc-lp64 rv64imafdc-lp64d rv64imafdc_zfh_xtheadc-lp64d"
 
 else
   newlib_multilib_names="$with_arch-$with_abi"
@@ -3483,10 +3528,18 @@ else
 fi
 
 if test "x$enable_multilib" != xno; then :
-  musl_multilib_names="rv64imac-lp64 rv64imafdc-lp64d"
+  thead64_multilib_names="rv64imac_xtheadc-lp64 rv64imafdc_zfh_xtheadc-lp64d"
 
 else
-  musl_multilib_names="$with_arch-$with_abi"
+  thead64_multilib_names="$with_arch-$with_abi"
+
+fi
+
+if test "x$enable_multilib" != xno; then :
+  thead32_multilib_names="rv32imac_xtheadc-ilp32 rv32imafdc_zfh_xtheadc-ilp32d"
+
+else
+  thead32_multilib_names="$with_arch-$with_abi"
 
 fi
 
@@ -3556,6 +3609,73 @@ if test "x$with_host" != xdefault; then :
 
 else
   configure_host=""
+
+fi
+
+
+# Check whether --with-gcc-dep-libs was given.
+if test "${with_gcc_dep_libs+set}" = set; then :
+  withval=$with_gcc_dep_libs;
+else
+  with_gcc_dep_libs=default
+
+fi
+
+
+if test "x$with_gcc_dep_libs" != xdefault; then :
+  NEED_GCC_EXTERNAL_LIBRARIES=false
+
+	configure_gcc_dep_libs=--with-gmp=$with_gcc_dep_libs\ --with-mpfr=$with_gcc_dep_libs\ --with-mpc=$with_gcc_dep_libs\ --with-libexpat-prefix=$with_gcc_dep_libs\ --with-libmpfr-prefix=$with_gcc_dep_libs
+
+else
+  configure_gcc_dep_libs=""
+
+fi
+
+if test "x$enable_libccrt" != xno; then :
+  build_libgcctf=--enable-libgcctf
+
+        enable_libccrt=--enable-libccrt
+
+else
+  build_libgcctf=--disable-libgcctf
+
+        enable_libccrt=--disable-libccrt
+
+fi
+
+# Check whether --enable-install_strip was given.
+if test "${enable_install_strip+set}" = set; then :
+  enableval=$enable_install_strip;
+else
+  enable_install_strip=yes
+
+fi
+
+
+if test "x$enable_install_strip" != xno; then :
+  enable_install_strip=install-strip
+
+else
+  enable_install_strip=install
+
+fi
+
+
+# Check whether --with-pkgversion was given.
+if test "${with_pkgversion+set}" = set; then :
+  withval=$with_pkgversion;
+else
+  with_pkgversion=default
+
+fi
+
+
+if test "x$with_pkgversion" != xdefault; then :
+  configure_pkgversion=$with_pkgversion
+
+else
+  configure_pkgversion=""
 
 fi
 
@@ -3874,7 +3994,7 @@ fi
 if test "${enable_libsanitizer+set}" = set; then :
   enableval=$enable_libsanitizer;
 else
-  enable_libsanitizer=no
+  enable_libsanitizer=yes
 
 fi
 

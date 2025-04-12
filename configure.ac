@@ -122,7 +122,7 @@ AC_SUBST(WITH_SIM, $with_sim)
 
 AC_ARG_ENABLE(multilib,
 	[AS_HELP_STRING([--enable-multilib],
-		[build both RV32 and RV64 runtime libraries (only RV64 for musl libc) @<:@--disable-multilib@:>@])],
+		[build both RV32 and RV64 runtime libraries @<:@--disable-multilib@:>@])],
 	[],
 	[enable_multilib=no]
 	)
@@ -154,16 +154,30 @@ AS_IF([test "x$enable_multilib" != xno || test "x$with_multilib_generator" != xn
 	[AC_SUBST(multilib_flags,--disable-multilib)])
 
 AS_IF([test "x$enable_multilib" != xno],
-        [AC_SUBST(glibc_multilib_names,"rv32imac-ilp32 rv32imafdc-ilp32d rv64imac-lp64 rv64imafdc-lp64d")],
+        [AC_SUBST(glibc_multilib_names,"rv64imac-lp64 rv64imafdc-lp64d rv32imafdc-ilp32d rv32imac-ilp32")],
         [AC_SUBST(glibc_multilib_names,"$with_arch-$with_abi")])
 
 AS_IF([test "x$enable_multilib" != xno],
-        [AC_SUBST(newlib_multilib_names,"rv32i-ilp32 rv32iac-ilp32 rv32im-ilp32 rv32imac-ilp32 rv32imafc-ilp32f rv64imac-lp64 rv64imafdc-lp64d")],
+        [AC_SUBST(musl64_multilib_names,"rv64imac-lp64 rv64imafdc-lp64d")],
+        [AC_SUBST(musl64_multilib_names,"$with_arch-$with_abi")])
+
+AS_IF([test "x$enable_multilib" != xno],
+        [AC_SUBST(musl32_multilib_names,"rv32imafdc-ilp32d rv32imac-ilp32")],
+        [AC_SUBST(musl32_multilib_names,"$with_arch-$with_abi")])
+
+AS_IF([test "x$enable_multilib" != xno],
+        [AC_SUBST(newlib_multilib_names,"rv32ec-ilp32e rv32emc-ilp32e rv32i-ilp32 rv32im-ilp32 rv32iac-ilp32 rv32imac-ilp32 rv32imafc-ilp32f \
+                                         rv32imafdc-ilp32d rv32imafdc_xtheade-ilp32d rv32imafdc_zfh_xtheadc-ilp32d \
+                                         rv64imac-lp64 rv64imac_xtheadc-lp64 rv64imafdc-lp64d rv64imafdc_zfh_xtheadc-lp64d")],
         [AC_SUBST(newlib_multilib_names,"$with_arch-$with_abi")])
 
 AS_IF([test "x$enable_multilib" != xno],
-        [AC_SUBST(musl_multilib_names,"rv64imac-lp64 rv64imafdc-lp64d")],
-        [AC_SUBST(musl_multilib_names,"$with_arch-$with_abi")])
+        [AC_SUBST(thead64_multilib_names,"rv64imac_xtheadc-lp64 rv64imafdc_zfh_xtheadc-lp64d")],
+        [AC_SUBST(thead64_multilib_names,"$with_arch-$with_abi")])
+
+AS_IF([test "x$enable_multilib" != xno],
+        [AC_SUBST(thead32_multilib_names,"rv32imac_xtheadc-ilp32 rv32imafdc_zfh_xtheadc-ilp32d")],
+        [AC_SUBST(thead32_multilib_names,"$with_arch-$with_abi")])
 
 AC_ARG_ENABLE(gcc-checking,
         [AS_HELP_STRING([--enable-gcc-checking],
@@ -214,6 +228,46 @@ AC_ARG_WITH(host,
 AS_IF([test "x$with_host" != xdefault],
 	[AC_SUBST(configure_host,--host=$with_host)],
 	[AC_SUBST(configure_host,"")])
+
+AC_ARG_WITH(gcc-dep-libs,
+	[AC_HELP_STRING([--with-gcc-dep-libs],
+			[Set prefix directory for installed GMP/MPFR/MPC package])],
+	[],
+	[with_gcc_dep_libs=default]
+	)
+
+AS_IF([test "x$with_gcc_dep_libs" != xdefault],
+	[AC_SUBST(NEED_GCC_EXTERNAL_LIBRARIES,false)]
+	[AC_SUBST(configure_gcc_dep_libs,--with-gmp=$with_gcc_dep_libs\ --with-mpfr=$with_gcc_dep_libs\ --with-mpc=$with_gcc_dep_libs\ --with-libexpat-prefix=$with_gcc_dep_libs\ --with-libmpfr-prefix=$with_gcc_dep_libs)],
+	[AC_SUBST(configure_gcc_dep_libs,"")])
+
+AS_IF([test "x$enable_libccrt" != xno],
+        [AC_SUBST(build_libgcctf, --enable-libgcctf)]
+        [AC_SUBST(enable_libccrt, --enable-libccrt)],
+        [AC_SUBST(build_libgcctf, --disable-libgcctf)]
+        [AC_SUBST(enable_libccrt, --disable-libccrt)])
+
+AC_ARG_ENABLE(install_strip,
+	[AS_HELP_STRING([--disable-install-strip],
+		[Don't strip the executable file])],
+	[],
+	[enable_install_strip=yes]
+	)
+
+AS_IF([test "x$enable_install_strip" != xno],
+	[AC_SUBST(enable_install_strip, install-strip)],
+	[AC_SUBST(enable_install_strip, install)])
+
+AC_ARG_WITH(pkgversion,
+	[AC_HELP_STRING([--with-pkgversion],
+			[Set toolchain package version])],
+	[],
+	[with_pkgversion=default]
+	)
+
+AS_IF([test "x$with_pkgversion" != xdefault],
+	[AC_SUBST(configure_pkgversion,$with_pkgversion)],
+	[AC_SUBST(configure_pkgversion,"")])
 
 AC_ARG_WITH(system-zlib,
 	[AS_HELP_STRING([--without-system-zlib],
@@ -310,7 +364,7 @@ AC_ARG_ENABLE(libsanitizer,
 	[AS_HELP_STRING([--enable-libsanitizer],
 		[Build libsanitizer, which only supports rv64])],
 	[],
-	[enable_libsanitizer=no]
+	[enable_libsanitizer=yes]
 	)
 
 AS_IF([test "x$enable_libsanitizer" != xno],

@@ -1,0 +1,85 @@
+#
+# Signal related bug, might be mismatch siginfo?
+#
+FAIL: g++.dg/ext/cleanup-8.C
+FAIL: g++.dg/ext/cleanup-9.C
+FAIL: g++.dg/ext/cleanup-10.C
+FAIL: g++.dg/ext/cleanup-11.C
+FAIL: gcc.dg/cleanup-8.c
+FAIL: gcc.dg/cleanup-9.c
+FAIL: gcc.dg/cleanup-10.c
+FAIL: gcc.dg/cleanup-11.c
+#
+# XXX: Need review why.
+#
+FAIL: gfortran.dg/elemental_subroutine_3.f90
+FAIL: gfortran.dg/ieee/ieee_6.f90
+#
+# ieee_1.F90 is a QEMU bug: https://github.com/riscv/riscv-qemu/issues/64
+#
+FAIL: gfortran.dg/ieee/ieee_1.F90
+#
+# Synchronization problem.
+#
+FAIL: gcc.dg/tree-prof/time-profiler-2.c
+#
+# limits.h don't include gcc limits.h by musl
+#
+FAIL: gcc.dg/limits-width-1.c
+FAIL: gcc.dg/limits-width-2.c
+#
+# No short wchar support (__WCHAR_TYPE__ is ignored) by musl
+#
+FAIL: gcc.dg/utf-array-short-wchar.c
+#
+# Missing fortify api (__memcpy_chk) by musl
+#
+FAIL: gcc.dg/strlenopt-2f.c
+#
+# math_errhandling & MATH_ERRNO is not supported by musl
+#
+FAIL: gcc.dg/torture/pr68264.c
+#
+# Unknown reason, no '~~~~' under SETJMP
+#
+FAIL: gcc.dg/analyzer/setjmp-2.c
+FAIL: gcc.dg/analyzer/setjmp-3.c
+FAIL: gcc.dg/analyzer/setjmp-4.c
+FAIL: gcc.dg/analyzer/setjmp-5.c
+FAIL: gcc.dg/analyzer/setjmp-7a.c
+FAIL: gcc.dg/analyzer/setjmp-8.c
+FAIL: gcc.dg/analyzer/setjmp-9.c
+#
+# musl don't implement __cxa_thread_atexit and __pthread_tsd_run_dtors is not called at pthread_exit
+#
+FAIL: g++.dg/tls/thread_local-order2.C
+#
+# Unknown reason, need analysis
+#
+FAIL: g++.old-deja/g++.eh/badalloc1.C
+FAIL: c-c++-common/analyzer/fd-glibc-byte-stream-socket.c
+FAIL: c-c++-common/analyzer/fd-mappage-getaddrinfo-server.c
+FAIL: c-c++-common/analyzer/fd-symbolic-socket.c
+FAIL: c-c++-common/analyzer/fd-manpage-getaddrinfo-client.c
+
+#
+# unsupported relocation type 58
+#
+FAIL: gcc.dg/attr-ifunc-1.c
+FAIL: gcc.dg/attr-ifunc-3.c
+FAIL: gcc.dg/attr-ifunc-4.c
+FAIL: gcc.dg/attr-ifunc-5.c
+FAIL: gcc.dg/ipa/ipa-pta-19.c
+FAIL: g++.dg/ext/attr-ifunc-1.C
+FAIL: g++.dg/ext/attr-ifunc-2.C
+FAIL: g++.dg/ext/attr-ifunc-3.C
+FAIL: g++.dg/ext/attr-ifunc-4.C
+
+#
+# unknown type name for musl
+#
+FAIL: gcc.target/riscv/rvv/base/pr112743-2.c
+
+FAIL: gcc.dg/analyzer/fd-access-mode-target-headers.c
+
+FAIL: g++.dg/warn/Wstringop-overflow-6.C

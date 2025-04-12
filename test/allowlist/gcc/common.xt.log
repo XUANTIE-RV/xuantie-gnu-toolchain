@@ -1,0 +1,490 @@
+# Fail in gcc/testsuite/gcc.target/riscv/
+FAIL: gcc.target/riscv/cm_mv_rv32.c   -Os   check-function-bodies sum
+FAIL: gcc.target/riscv/reg_subreg_costs.c   -O1   scan-assembler-not \\szext.w\\s
+FAIL: gcc.target/riscv/shorten-memrefs-2.c   -Os   scan-assembler store1a:\n(\t?\\.[^\n]*\n)*\taddi
+XPASS: gcc.target/riscv/shorten-memrefs-3.c   -Os   scan-assembler-not load2a:\n.*addi[ \t]*[at][0-9],[at][0-9],[0-9]*
+FAIL: gcc.target/riscv/shorten-memrefs-5.c   -Os   scan-assembler store1a:\n(\t?\\.[^\n]*\n)*\taddi
+FAIL: gcc.target/riscv/shorten-memrefs-8.c   -Os   scan-assembler store:\n(\t?\\.[^\n]*\n)*\taddi\ta[0-7],a[0-7],1
+FAIL: gcc.target/riscv/xtheadfmemidx-ICE.c
+
+# Update at 2024-07-21
+# Need to analyze the root cause of the following failures
+FAIL: gcc.dg/Wstringop-overflow-47.c pr97027
+FAIL: gcc.dg/tree-ssa/update-threading.c
+
+# Update at 2024-07-28
+# Need to analyze the root cause of the following failures
+FAIL: g++.dg/modules/bad-mapper-1.C
+FAIL: g++.dg/vect/pr95401.cc
+FAIL: gfortran.dg/dollar_edit_descriptor_3.f
+FAIL: gfortran.dg/namelist_print_1.f
+FAIL: gfortran.dg/read_x_eor.f90
+FAIL: gfortran.dg/g77/f77-edit-apostrophe-out.f
+FAIL: gfortran.dg/g77/f77-edit-colon-out.f
+FAIL: gfortran.dg/g77/f77-edit-h-out.f
+FAIL: gfortran.dg/g77/f77-edit-i-out.f
+FAIL: gfortran.dg/g77/f77-edit-s-out.f
+FAIL: gfortran.dg/g77/f77-edit-slash-out.f
+FAIL: gfortran.dg/g77/f77-edit-t-out.f
+FAIL: gfortran.dg/g77/f77-edit-x-out.f
+FAIL: gfortran.dg/ldist-pr45199.f 
+FAIL: gcc.dg/Wstringop-overflow-47.c
+FAIL: gcc.dg/tree-ssa/ssa-dom-cse-2.c
+FAIL: gcc.dg/tree-ssa/update-threading.c
+FAIL: gcc.dg/vect/costmodel/riscv/rvv/pr113281-1.c
+FAIL: gcc.dg/vect/costmodel/riscv/rvv/pr113281-2.c
+FAIL: gcc.dg/vect/costmodel/riscv/rvv/pr113281-5.c
+FAIL: gcc.dg/vect/pr65310.c
+FAIL: gcc.dg/vect/pr88598-1.c
+FAIL: gcc.dg/vect/pr88598-1.c
+FAIL: gcc.dg/vect/pr88598-2.c
+FAIL: gcc.dg/vect/pr88598-2.c
+FAIL: gcc.dg/vect/pr88598-3.c
+FAIL: gcc.dg/vect/pr88598-3.c
+FAIL: gcc.dg/vect/vect-gather-2.c
+FAIL: gcc.target/riscv/rvv/base/cpymem-1.c
+FAIL: g++.dg/modules/pr99425-2_b.X
+
+# May fail when -mcmodel=medany
+# This is just an optimized check, and this optimization does not
+# affect code generation for the RISC-V backend. Further analysis
+# can be conducted to determine how this optimization can truly impact RISC-V.
+FAIL: gcc.dg/cmp-mem-const-5.c
+
+#
+# Known to fail with Xuantie -march/-mtune options
+#
+FAIL: gcc.dg/Wnested-externs-1.c
+FAIL: gcc.dg/Wnested-externs-2.c
+FAIL: gcc.dg/uninit-pr100250.c
+FAIL: c-c++-common/torture/asm-inline.c
+FAIL: gcc.dg/torture/bfloat16-complex.c
+FAIL: gcc.dg/tree-ssa/pr96239.c
+FAIL: gcc.target/riscv/attribute-5.c
+FAIL: gcc.target/riscv/fold-mem-offsets-3.c
+FAIL: gcc.target/riscv/interrupt-4.c
+FAIL: c-c++-common/vector-subscript-4.c
+FAIL: g++.dg/pr79095-2.C
+FAIL: g++.dg/pr83239.C
+FAIL: g++.dg/tree-ssa/calloc.C
+FAIL: g++.dg/tree-ssa/ldist-1.C
+FAIL: g++.dg/tree-ssa/pr78847.C
+FAIL: g++.dg/warn/Warray-bounds-pr104165-1.C
+FAIL: gcc.dg/ipa/iinline-attr.c
+FAIL: gcc.dg/pr110279-1.c
+FAIL: gcc.dg/pr53265.c
+FAIL: gcc.dg/signbit-2.c
+FAIL: gcc.dg/tree-ssa/ctz-char.c
+FAIL: gcc.dg/tree-ssa/ctz-complement-char.c
+FAIL: gcc.dg/tree-ssa/ctz-complement-int.c
+FAIL: gcc.dg/tree-ssa/ctz-complement-long.c
+FAIL: gcc.dg/tree-ssa/ctz-int.c
+FAIL: gcc.dg/tree-ssa/ctz-long.c
+FAIL: gcc.dg/tree-ssa/ldist-19.c
+FAIL: gcc.dg/tree-ssa/ldist-21.c
+FAIL: gcc.dg/tree-ssa/ldist-22.c
+FAIL: gcc.dg/tree-ssa/ldist-26.c
+FAIL: gcc.dg/tree-ssa/ldist-strlen-1.c
+FAIL: gcc.dg/tree-ssa/ldist-strlen-2.c
+FAIL: gcc.dg/tree-ssa/muldiv-1.c
+FAIL: gcc.dg/tree-ssa/scev-13.c
+FAIL: gcc.dg/tree-ssa/scev-15.c
+FAIL: gcc.dg/unroll-8.c
+FAIL: gcc.dg/var-expand1.c
+FAIL: gcc.target/riscv/divmod-1.c
+FAIL: gcc.target/riscv/pr105314-rtl32.c
+FAIL: gcc.target/riscv/pr105314.c
+FAIL: gcc.target/riscv/rvv/base/cpymem-1.c
+UNRESOLVED: gcc.dg/tree-ssa/ldist-37.c
+UNRESOLVED: gcc.dg/tree-ssa/ldist-38.c
+UNRESOLVED: gcc.dg/tree-ssa/ldist-39.c
+
+#
+# Cases with -mtune=sifive*
+#
+FAIL: gcc.target/riscv/movsigtu.c
+FAIL: gcc.target/riscv/movsile-sfb.c
+FAIL: gcc.target/riscv/movsile.c
+FAIL: gcc.target/riscv/movsileu-sfb.c
+FAIL: gcc.target/riscv/movsileu.c
+FAIL: gcc.target/riscv/movsilt-sfb.c
+FAIL: gcc.target/riscv/movsilt.c
+FAIL: gcc.target/riscv/movsiltu-sfb.c
+FAIL: gcc.target/riscv/movsiltu.c
+FAIL: gcc.target/riscv/adddibeq.c
+FAIL: gcc.target/riscv/adddibfeq.c
+FAIL: gcc.target/riscv/adddibfge.c
+FAIL: gcc.target/riscv/adddibfgt.c
+FAIL: gcc.target/riscv/adddibfle.c
+FAIL: gcc.target/riscv/adddibflt.c
+FAIL: gcc.target/riscv/adddibfne.c
+FAIL: gcc.target/riscv/adddibge.c
+FAIL: gcc.target/riscv/adddibgeu.c
+FAIL: gcc.target/riscv/adddibgt.c
+FAIL: gcc.target/riscv/adddibgtu.c
+FAIL: gcc.target/riscv/adddible.c
+FAIL: gcc.target/riscv/adddibleu.c
+FAIL: gcc.target/riscv/adddiblt.c
+FAIL: gcc.target/riscv/adddibltu.c
+FAIL: gcc.target/riscv/adddibne.c
+FAIL: gcc.target/riscv/adddieq.c
+FAIL: gcc.target/riscv/adddifeq.c
+FAIL: gcc.target/riscv/adddifge.c
+FAIL: gcc.target/riscv/adddifgt.c
+FAIL: gcc.target/riscv/adddifle.c
+FAIL: gcc.target/riscv/adddiflt.c
+FAIL: gcc.target/riscv/adddifne.c
+FAIL: gcc.target/riscv/adddige.c
+FAIL: gcc.target/riscv/adddigeu.c
+FAIL: gcc.target/riscv/adddigt.c
+FAIL: gcc.target/riscv/adddigtu.c
+FAIL: gcc.target/riscv/adddile.c
+FAIL: gcc.target/riscv/adddileu.c
+FAIL: gcc.target/riscv/adddilt.c
+FAIL: gcc.target/riscv/adddiltu.c
+FAIL: gcc.target/riscv/adddine.c
+FAIL: gcc.target/riscv/addsibeq.c
+FAIL: gcc.target/riscv/addsibfeq.c
+FAIL: gcc.target/riscv/addsibfge.c
+FAIL: gcc.target/riscv/addsibfgt.c
+FAIL: gcc.target/riscv/addsibfle.c
+FAIL: gcc.target/riscv/addsibflt.c
+FAIL: gcc.target/riscv/addsibfne.c
+FAIL: gcc.target/riscv/addsibge.c
+FAIL: gcc.target/riscv/addsibgeu.c
+FAIL: gcc.target/riscv/addsibgt.c
+FAIL: gcc.target/riscv/addsibgtu.c
+FAIL: gcc.target/riscv/addsible.c
+FAIL: gcc.target/riscv/addsibleu.c
+FAIL: gcc.target/riscv/addsiblt.c
+FAIL: gcc.target/riscv/addsibltu.c
+FAIL: gcc.target/riscv/addsibne.c
+FAIL: gcc.target/riscv/addsieq.c
+FAIL: gcc.target/riscv/addsifeq.c
+FAIL: gcc.target/riscv/addsifge.c
+FAIL: gcc.target/riscv/addsifgt.c
+FAIL: gcc.target/riscv/addsifle.c
+FAIL: gcc.target/riscv/addsiflt.c
+FAIL: gcc.target/riscv/addsifne.c
+FAIL: gcc.target/riscv/addsige.c
+FAIL: gcc.target/riscv/addsigeu.c
+FAIL: gcc.target/riscv/addsigt.c
+FAIL: gcc.target/riscv/addsigtu.c
+FAIL: gcc.target/riscv/addsile.c
+FAIL: gcc.target/riscv/addsileu.c
+FAIL: gcc.target/riscv/addsilt.c
+FAIL: gcc.target/riscv/addsiltu.c
+FAIL: gcc.target/riscv/addsine.c
+FAIL: gcc.target/riscv/movsibgt.c
+FAIL: gcc.target/riscv/movsibgtu.c
+FAIL: gcc.target/riscv/movsible.c
+FAIL: gcc.target/riscv/movsibleu.c
+FAIL: gcc.target/riscv/movsiblt.c
+FAIL: gcc.target/riscv/movsibltu.c
+FAIL: gcc.target/riscv/movsibne.c
+FAIL: gcc.target/riscv/movsieq-sfb.c
+FAIL: gcc.target/riscv/movsieq.c
+FAIL: gcc.target/riscv/movsifeq-sfb.c
+FAIL: gcc.target/riscv/movsifeq.c
+FAIL: gcc.target/riscv/movsifge-sfb.c
+FAIL: gcc.target/riscv/movsifge.c
+FAIL: gcc.target/riscv/movsifgt-sfb.c
+FAIL: gcc.target/riscv/movsifgt.c
+FAIL: gcc.target/riscv/movsifle-sfb.c
+FAIL: gcc.target/riscv/movsifle.c
+FAIL: gcc.target/riscv/movsiflt-sfb.c
+FAIL: gcc.target/riscv/movsiflt.c
+FAIL: gcc.target/riscv/movsifne-sfb.c
+FAIL: gcc.target/riscv/movsifne.c
+FAIL: gcc.target/riscv/movsige-sfb.c
+FAIL: gcc.target/riscv/movsige.c
+FAIL: gcc.target/riscv/movsigeu-sfb.c
+FAIL: gcc.target/riscv/movsigeu.c
+FAIL: gcc.target/riscv/movsigt-sfb.c
+FAIL: gcc.target/riscv/movsigt.c
+FAIL: gcc.target/riscv/movsigtu-sfb.c
+FAIL: gcc.target/riscv/cset-sext-rtl.c
+FAIL: gcc.target/riscv/cset-sext-rtl32.c
+FAIL: gcc.target/riscv/cset-sext-sfb-rtl.c
+FAIL: gcc.target/riscv/cset-sext-sfb-rtl32.c
+FAIL: gcc.target/riscv/cset-sext-sfb.c
+FAIL: gcc.target/riscv/cset-sext.c
+FAIL: gcc.target/riscv/movsibgeu.c
+FAIL: gcc.target/riscv/movsibge.c
+FAIL: gcc.target/riscv/movsine-sfb.c
+FAIL: gcc.target/riscv/movsine.c
+FAIL: gcc.target/riscv/pr113095.c
+FAIL: gcc.target/riscv/pr113742.c
+FAIL: gcc.target/riscv/sfb.c
+FAIL: gcc.target/riscv/movdibgeu.c
+FAIL: gcc.target/riscv/movdibgt.c
+FAIL: gcc.target/riscv/movdibgtu.c
+FAIL: gcc.target/riscv/movdible.c
+FAIL: gcc.target/riscv/movdibleu.c
+FAIL: gcc.target/riscv/movdiblt.c
+FAIL: gcc.target/riscv/movdibltu.c
+FAIL: gcc.target/riscv/movdibne.c
+FAIL: gcc.target/riscv/movdieq-sfb.c
+FAIL: gcc.target/riscv/movdieq.c
+FAIL: gcc.target/riscv/movdifeq-sfb.c
+FAIL: gcc.target/riscv/movdifeq.c
+FAIL: gcc.target/riscv/movdifge-sfb.c
+FAIL: gcc.target/riscv/movdifge.c
+FAIL: gcc.target/riscv/movdifgt-sfb.c
+FAIL: gcc.target/riscv/movdifgt.c
+FAIL: gcc.target/riscv/movdifle-sfb.c
+FAIL: gcc.target/riscv/movdifle.c
+FAIL: gcc.target/riscv/movdiflt-sfb.c
+FAIL: gcc.target/riscv/movdiflt.c
+FAIL: gcc.target/riscv/movdifne-sfb.c
+FAIL: gcc.target/riscv/movdifne.c
+FAIL: gcc.target/riscv/movdigeu-sfb.c
+FAIL: gcc.target/riscv/movdigeu.c
+FAIL: gcc.target/riscv/movdigtu-sfb.c
+FAIL: gcc.target/riscv/movdigtu.c
+FAIL: gcc.target/riscv/movdileu-sfb.c
+FAIL: gcc.target/riscv/movdileu.c
+FAIL: gcc.target/riscv/movdiltu-sfb.c
+FAIL: gcc.target/riscv/movdiltu.c
+FAIL: gcc.target/riscv/movsibfeq.c
+FAIL: gcc.target/riscv/movsibfgt.c
+FAIL: gcc.target/riscv/movsibflt.c
+FAIL: gcc.target/riscv/movdige-sfb.c
+FAIL: gcc.target/riscv/movdige.c
+FAIL: gcc.target/riscv/movdigt-sfb.c
+FAIL: gcc.target/riscv/movdigt.c
+FAIL: gcc.target/riscv/movdile-sfb.c
+FAIL: gcc.target/riscv/movdile.c
+FAIL: gcc.target/riscv/movdilt-sfb.c
+FAIL: gcc.target/riscv/movdilt.c
+FAIL: gcc.target/riscv/movdine-sfb.c
+FAIL: gcc.target/riscv/movdine.c
+FAIL: gcc.target/riscv/movsibeq.c
+FAIL: gcc.target/riscv/movsibfge.c
+FAIL: gcc.target/riscv/movsibfle.c
+FAIL: gcc.target/riscv/movsibfne.c
+FAIL: gcc.target/riscv/movdibeq.c
+FAIL: gcc.target/riscv/movdibfge.c
+FAIL: gcc.target/riscv/movdibfle.c
+FAIL: gcc.target/riscv/movdibfne.c
+FAIL: gcc.target/riscv/movdibge.c
+FAIL: gcc.target/riscv/mcpu-7.c
+FAIL: gcc.target/riscv/movdibfeq.c
+FAIL: gcc.target/riscv/movdibfgt.c
+FAIL: gcc.target/riscv/movdibflt.c
+FAIL: gcc.target/riscv/zicond-sfb-primitiveSemantics.c
+FAIL: gcc.target/riscv/interrupt-2.c
+FAIL: gcc.target/riscv/pr105314-rtl.c
+FAIL: gcc.target/riscv/pr112478.c
+FAIL: gcc.target/riscv/zba-shNadd-07.c
+FAIL: gcc.dg/tree-ssa/clz-char.c
+FAIL: gcc.dg/tree-ssa/clz-complement-int.c
+FAIL: gcc.dg/tree-ssa/clz-int.c
+FAIL: gcc.dg/tree-ssa/ctz-complement-long-long.c
+FAIL: gcc.dg/tree-ssa/ctz-long-long.c
+FAIL: gcc.dg/tree-ssa/ssa-dom-cse-2.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-103.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-104.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-109.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-110.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-115.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-45.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-51.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-57.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-63.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-69.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-70.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-75.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-80.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-85.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-91.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-97.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-98.c
+FAIL: gcc.target/riscv/rvv/base/binop_vv_constraint-3.c
+FAIL: gcc.target/riscv/rvv/base/binop_vv_constraint-4.c
+FAIL: gcc.target/riscv/rvv/base/binop_vv_constraint-7.c
+FAIL: gcc.target/riscv/rvv/base/binop_vv_constraint-124.c
+FAIL: gcc.target/riscv/rvv/base/binop_vv_constraint-125.c
+FAIL: gcc.target/riscv/rvv/base/binop_vv_constraint-128.c
+FAIL: gcc.target/riscv/rvv/base/float-point-dynamic-frm-57.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-1.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-17.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-18.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-19.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-20.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-21.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-22.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-23.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-24.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-25.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-26.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-27.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-28.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-29.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-30.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-31.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-4.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-5.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-8.c
+FAIL: gcc.target/riscv/rvv/base/narrow_constraint-9.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vx_constraint-3.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vx_constraint-4.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vx_constraint-5.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vx_constraint-6.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vx_constraint-7.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vx_constraint-1.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vx_constraint-8.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vx_constraint-9.c
+FAIL: gcc.target/riscv/rvv/vsetvl/vlmax_back_prop-19.c
+FAIL: gcc.target/riscv/rvv/vsetvl/vlmax_bb_prop-21.c
+FAIL: gcc.target/riscv/rvv/vsetvl/vlmax_bb_prop-22.c
+FAIL: gcc.target/riscv/rvv/vsetvl/vlmax_bb_prop-23.c
+FAIL: gcc.target/riscv/rvv/vsetvl/vlmax_bb_prop-24.c
+FAIL: gcc.target/riscv/rvv/vsetvl/pr111037-1.c
+FAIL: gcc.target/riscv/rvv/vsetvl/pr111037-2.c
+FAIL: gcc.target/riscv/xtheadmemidx-uindex-update.c
+FAIL: gcc.target/riscv/xtheadfmemidx-uindex-update.c
+FAIL: gcc.target/riscv/rvv/autovec/pr113206-2.c
+FAIL: gcc.target/riscv/rvv/autovec/pr113469.c
+FAIL: gcc.target/riscv/rvv/autovec/vls/calling-convention-1.c
+FAIL: gcc.target/riscv/rvv/autovec/vls/calling-convention-2.c
+FAIL: gcc.target/riscv/rvv/autovec/vls/calling-convention-3.c
+FAIL: gcc.target/riscv/rvv/autovec/vls/calling-convention-4.c
+FAIL: gcc.target/riscv/rvv/autovec/vls/calling-convention-5.c
+FAIL: gcc.target/riscv/rvv/autovec/vls/calling-convention-6.c
+FAIL: gcc.target/riscv/rvv/autovec/vls/calling-convention-7.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-12.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-16.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-17.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-19.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-21.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-23.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-25.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-27.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-29.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-31.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-33.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-35.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-4.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-40.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-44.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-8.c
+FAIL: gcc.target/riscv/rvv/base/cpymem-2.c
+FAIL: gcc.target/riscv/rvv/base/float-point-dynamic-frm-46.c
+FAIL: gcc.target/riscv/rvv/base/shift_vx_constraint-1.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vv_constraint-1.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vv_constraint-2.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vv_constraint-3.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vv_constraint-4.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vv_constraint-5.c
+FAIL: gcc.target/riscv/rvv/base/ternop_vv_constraint-6.c
+FAIL: gcc.target/riscv/rvv/vsetvl/avl_single-107.c
+FAIL: gcc.target/riscv/rvv/vsetvl/pr111037-4.c
+FAIL: gcc.target/riscv/rvv/vsetvl/pr112929-1.c
+FAIL: gcc.target/riscv/rvv/vsetvl/pr112988-1.c
+FAIL: gcc.target/riscv/rvv/vsetvl/vlmax_conflict-12.c
+FAIL: gcc.target/riscv/rvv/vsetvl/vlmax_conflict-3.c
+FAIL: gcc.target/riscv/rvv/vsetvl/vlmax_switch_vtype-4.c
+FAIL: gcc.target/riscv/rvv/vsetvl/vlmax_switch_vtype-5.c
+FAIL: g++.dg/vect/pr33426-ivdep-3.cc
+FAIL: g++.dg/vect/pr33426-ivdep-4.cc
+FAIL: g++.dg/vect/slp-pr56812.cc
+FAIL: gcc.dg/autopar/reduc-1char.c
+FAIL: gcc.dg/autopar/reduc-7.c
+FAIL: gcc.dg/bic-bitmask-7.c
+FAIL: gcc.dg/tree-prof/val-prof-1.c
+FAIL: gcc.dg/tree-prof/val-prof-3.c
+FAIL: gcc.dg/tree-prof/val-prof-4.c
+FAIL: gcc.dg/tree-ssa/clz-complement-char.c
+FAIL: gcc.dg/tree-ssa/cunroll-16.c
+FAIL: gcc.dg/tree-ssa/gen-vect-34.c
+FAIL: gcc.dg/tree-ssa/ivopt_5.c
+FAIL: gcc.dg/tree-ssa/ivopts-lt-2.c
+FAIL: gcc.dg/tree-ssa/ldist-rawmemchr-1.c
+FAIL: gcc.dg/tree-ssa/ldist-rawmemchr-2.c
+FAIL: gcc.dg/tree-ssa/loop-bound-1.c
+FAIL: gcc.dg/tree-ssa/loop-bound-2.c
+FAIL: gcc.dg/tree-ssa/predcom-4.c
+FAIL: gcc.dg/tree-ssa/predcom-5.c
+FAIL: gcc.dg/tree-ssa/predcom-9.c
+FAIL: gcc.dg/tree-ssa/reassoc-46.c
+FAIL: gcc.dg/tree-ssa/scev-10.c
+FAIL: gcc.dg/tree-ssa/scev-14.c
+FAIL: gcc.dg/tree-ssa/scev-9.c
+FAIL: gcc.dg/vect/costmodel/riscv/rvv/dynamic-lmul4-7.c
+FAIL: gcc.dg/vect/pr103116-1.c
+FAIL: gcc.dg/vect/pr103116-2.c
+FAIL: gcc.dg/vect/pr66251.c
+FAIL: gcc.dg/vect/slp-reduc-sad-2.c
+FAIL: gcc.dg/vect/vect-early-break_63.c
+FAIL: gcc.target/riscv/rvv/autovec/builtin/rawmemchr-1.c
+FAIL: gcc.target/riscv/rvv/autovec/pr114668.c
+FAIL: gcc.target/riscv/rvv/autovec/pr114734.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-124.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-125.c
+FAIL: gcc.target/riscv/rvv/base/binop_vx_constraint-128.c
+FAIL: gcc.target/riscv/xuantie/bugfix/xtheadvector_vext_x_v.c
+UNRESOLVED: gcc.dg/torture/bfloat16-complex.c
+UNRESOLVED: gcc.target/riscv/attribute-5.c
+XPASS: g++.dg/tree-ssa/pr83518.C
+XPASS: gcc.dg/pr96573.c
+XPASS: gcc.dg/signbit-5.c
+XPASS: gcc.dg/tree-ssa/pr84512.c
+XPASS: gcc.dg/tree-ssa/ssa-sink-18.c
+XPASS: gcc.dg/vect/slp-reduc-11.c
+XPASS: gcc.dg/vect/vect-live-slp-3.c
+FAIL: gcc.dg/vect/costmodel/riscv/rvv/dynamic-lmul4-1.c
+
+#
+# gomp-constants.h: No such file or directory
+#
+FAIL: c-c++-common/goacc/builtin-goacc-parlevel-id-size.c
+FAIL: c-c++-common/goacc/builtin-goacc-parlevel-id-size-2.c
+
+#
+# gcov failed: gcov-pr94029.c.gcov does not exist
+#
+FAIL: gcc.misc-tests/gcov-pr94029.c
+
+FAIL: gcc.dg/torture/pr113026-1.c
+FAIL: g++.dg/modules/pr99425-2_b.X
+
+#
+# Some CPUs do not support fence.tso.
+#
+FAIL: gcc.target/riscv/amo-table-a-6-fence-4.c
+
+#
+# Turn off pcom pass temporarily.
+#
+UNRESOLVED: gcc.dg/pr59643.c scan-tree-dump-times pcom "Before commoning:" 1
+UNRESOLVED: gcc.dg/pr59643.c scan-tree-dump-times pcom "Unrolling 2 times" 1
+UNRESOLVED: gcc.dg/tree-ssa/pr100794.c scan-tree-dump pcom "Executing predictive commoning without unrolling"
+UNRESOLVED: gcc.dg/tree-ssa/pr101824.c scan-tree-dump-not pcom "Executing predictive commoning"
+UNRESOLVED: gcc.dg/tree-ssa/pr81620-1.c scan-tree-dump-times pcom "Store-stores chain" 1
+UNRESOLVED: gcc.dg/tree-ssa/pr81620-2.c scan-tree-dump-times pcom "Store-stores chain" 1
+UNRESOLVED: gcc.dg/tree-ssa/pr81627.c scan-tree-dump-times pcom "Store-stores chain" 1
+UNRESOLVED: gcc.dg/tree-ssa/pr81744.c scan-tree-dump-times pcom "Store-stores chain" 2
+UNRESOLVED: gcc.dg/tree-ssa/predcom-7.c scan-tree-dump pcom "Executing predictive commoning"
+UNRESOLVED: gcc.dg/tree-ssa/predcom-7.c scan-tree-dump-times pcom "Invalid sum" 1
+UNRESOLVED: gcc.dg/tree-ssa/predcom-8.c scan-tree-dump pcom "Executing predictive commoning without unrolling"
+UNRESOLVED: gcc.dg/tree-ssa/predcom-8.c scan-tree-dump-not pcom "Invalid sum"
+UNRESOLVED: gcc.dg/tree-ssa/predcom-9.c scan-tree-dump pcom "Executing predictive commoning without unrolling"
+
+#
+# Turn off sink common store when not optimize size or auto vectorize
+#
+FAIL: gcc.dg/tree-ssa/ssa-sink-13.c scan-tree-dump-times sink1 "<bb " 1
+FAIL: gcc.dg/tree-ssa/ssa-sink-13.c scan-tree-dump-times sink1 "MEM[^\n\r]* = 0;" 3
+
+#
+# Turn off tree-level auto vectorization when -mrvv-auto-vectorize is
+# not specified.
+#
+FAIL: compiler driver -Q -O3 --help=optimizers option(s): "-ftree-loop-vectorize[^\n]*enabled"
+FAIL: compiler driver -Q -O2 --help=optimizers option(s): "-ftree-loop-vectorize[^\n]*enabled"
+
+#
+# XuanTie-tuned inlining options can make the message show twice.
+#
+FAIL: gcc.dg/torture/crc-17.c   -O2   scan-tree-dump-times crc "Polynomial's value is \\{[0, ]*1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1\\}" 1

@@ -1,0 +1,18 @@
+#
+# Known to fail with Xuantie -march/-mtune options
+#
+FAIL: gcc.dg/torture/bfloat16-complex.c
+FAIL: gcc.dg/vect/tsvc/vect-tsvc-s176.c
+FAIL: gcc.dg/vect/tsvc/vect-tsvc-s351.c
+FAIL: gcc.dg/vect/tsvc/vect-tsvc-vpv.c
+FAIL: gcc.target/riscv/xtheadfmemidx-uindex-update.c
+FAIL: gcc.dg/stack-usage-1.c
+FAIL: gcc.target/riscv/xtheadmempair-3.c
+FAIL: gcc.dg/pr84877.c
+
+#
+# pthread do not support TLS_MODEL_LOCAL_DYNAMIC/TLS_MODEL_GLOBAL_DYNAMIC
+#
+FAIL: gcc.dg/torture/tls/tls-test.c
+UNRESOLVED: gcc.dg/torture/tls/tls-test.c
+FAIL: gcc.dg/analyzer/feasibility-pr107582-1.c

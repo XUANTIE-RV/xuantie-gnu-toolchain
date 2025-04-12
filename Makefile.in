@@ -66,8 +66,13 @@ else
 NEWLIB_MULTILIB_NAMES := $(shell echo "$(MULTILIB_GEN)" | $(SED) 's/;/\n/g' | $(SED) '/^$$/d' | $(AWK) '{split($$0,a,"-"); printf "%s-%s ", a[1],a[2]}')
 GCC_MULTILIB_FLAGS := $(MULTILIB_FLAGS) --with-multilib-generator="$(MULTILIB_GEN)"
 endif
-GLIBC_MULTILIB_NAMES := @glibc_multilib_names@
+GLIBC_COMMON_MULTILIB_NAMES := @glibc_multilib_names@
+MUSL32_MULTILIB_NAMES := @musl32_multilib_names@
+MUSL64_MULTILIB_NAMES := @musl64_multilib_names@
+THEAD32_MULTILIB_NAMES := @thead32_multilib_names@
+THEAD64_MULTILIB_NAMES := @thead64_multilib_names@
 GCC_CHECKING_FLAGS := @gcc_checking@
+GLIBC_MULTILIB_NAMES := $(GLIBC_COMMON_MULTILIB_NAMES) $(THEAD32_MULTILIB_NAMES) $(THEAD64_MULTILIB_NAMES)
 
 EXTRA_MULTILIB_TEST := @extra_multilib_test@
 
@@ -87,7 +92,7 @@ ASFLAGS_FOR_TARGET := $(ASFLAGS_FOR_TARGET_EXTRA) $(DEBUG_INFO) @cmodel@
 # --with-expat is required to enable XML support used by OpenOCD.
 BINUTILS_TARGET_FLAGS := --with-expat=yes $(BINUTILS_TARGET_FLAGS_EXTRA)
 BINUTILS_NATIVE_FLAGS := $(BINUTILS_NATIVE_FLAGS_EXTRA)
-GDB_TARGET_FLAGS := --with-expat=yes $(GDB_TARGET_FLAGS_EXTRA)
+GDB_TARGET_FLAGS := --with-expat=yes --with-python=no $(GDB_TARGET_FLAGS_EXTRA)
 GDB_NATIVE_FLAGS := $(GDB_NATIVE_FLAGS_EXTRA)
 
 GLIBC_TARGET_FLAGS := $(GLIBC_TARGET_FLAGS_EXTRA)
@@ -118,9 +123,16 @@ NEWLIB_CC_FOR_MULTILIB_INFO := $(NEWLIB_CC_FOR_TARGET)
 MUSL_TARGET_FLAGS := $(MUSL_TARGET_FLAGS_EXTRA)
 MUSL_CC_FOR_TARGET ?= $(MUSL_TUPLE)-gcc
 MUSL_CXX_FOR_TARGET ?= $(MUSL_TUPLE)-g++
+MUSL_TARGET_BOARDS ?= $(shell echo "$(MUSL$(XLEN)_MULTILIB_NAMES)" | sed 's!\([_a-z0-9]*\)-\([_a-z0-9]*\)!riscv-sim/-march=\1/-mabi=\2/@cmodel@!g')
 
 CONFIGURE_HOST   = @configure_host@
 PREPARATION_STAMP:=stamps/check-write-permission
+
+CONFIGURE_PKGVERSION = @configure_pkgversion@
+CONFIGURE_GCC_DEP_LIBS   = @configure_gcc_dep_libs@
+GCC_CXXFLAGS = "-g -O2 $(GCC_CXXFLAGS_EXTRA)"
+
+INSTALL = @enable_install_strip@
 
 all: @default_target@
 ifeq (@enable_host_gcc@,--enable-host-gcc)
@@ -130,16 +142,11 @@ GCC_CHECKING_FLAGS := $(GCC_CHECKING_FLAGS) --enable-werror-always
 endif
 newlib: stamps/build-gcc-newlib-stage2
 linux: stamps/build-gcc-linux-stage2
-ifneq (,$(findstring riscv32,$(MUSL_TUPLE)))
-.PHONY: musl
-musl:
-	@echo "musl only supports 64bit builds." && exit 1
-else
 musl: stamps/build-gcc-musl-stage2
-endif
 ifeq (@enable_gdb@,--enable-gdb)
 newlib: stamps/build-gdb-newlib
 linux: stamps/build-gdb-linux
+musl: stamps/build-gdb-musl
 endif
 linux-native: stamps/build-gcc-linux-native
 ifeq (@enable_llvm@,--enable-llvm)
@@ -165,6 +172,7 @@ build-qemu: stamps/build-qemu
 build-llvm: stamps/build-llvm-@default_target@
 
 REGRESSION_TEST_LIST = gcc
+REGRESSION_TEST_LIST_GCC ?=
 
 .PHONY: check
 check: check-@default_target@
@@ -206,6 +214,15 @@ report-dhrystone: report-dhrystone-@default_target@
 report-binutils: report-binutils-@default_target@
 .PHONY: report-gdb
 report-gdb: report-gdb-@default_target@
+
+.PHONY: check-musl
+check-musl: $(patsubst %,check-%-musl,$(REGRESSION_TEST_LIST))
+.PHONY: check-gcc-musl
+check-gcc-musl: stamps/check-gcc-musl
+.PHONY: check-binutils-musl
+check-binutils-musl: stamps/check-binutils-musl
+.PHONY: report-musl
+report-musl: $(patsubst %,report-%-musl,$(REGRESSION_TEST_LIST))
 
 .PHONY: build-sim
 ifeq ($(SIM),qemu)
@@ -320,10 +337,16 @@ else
 DEJAGNU_SRC_GIT :=
 endif
 
-ifneq ("$(wildcard $(GCC_SRCDIR)/.git)","")
-GCCPKGVER := g$(shell git -C $(GCC_SRCDIR) describe --always --dirty --exclude '*')
+ifneq ($(strip $(CONFIGURE_PKGVERSION)),)
+GCCPKGVER := $(CONFIGURE_PKGVERSION)
+CONFIGURE_GDBPKGVER := --with-pkgversion="$(CONFIGURE_PKGVERSION)"
 else
-GCCPKGVER :=
+	ifneq ("$(wildcard $(GCC_SRCDIR)/.git)","")
+	GCCPKGVER := g$(shell git -C $(GCC_SRCDIR) describe --always --dirty --exclude '*')
+	else
+	GCCPKGVER :=
+	endif
+	CONFIGURE_GDBPKGVER :=
 endif
 
 $(srcdir)/%/.git:
@@ -370,7 +393,7 @@ stamps/build-binutils-linux: $(BINUTILS_SRCDIR) $(BINUTILS_SRC_GIT) $(PREPARATIO
 		--disable-readline \
 		$(WITH_ISA_SPEC)
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
+	$(MAKE) -C $(notdir $@) $(INSTALL)
 	mkdir -p $(dir $@) && touch $@
 
 stamps/build-gdb-linux: $(GDB_SRCDIR) $(GDB_SRC_GIT) $(PREPARATION_STAMP)
@@ -380,6 +403,8 @@ stamps/build-gdb-linux: $(GDB_SRCDIR) $(GDB_SRC_GIT) $(PREPARATION_STAMP)
 	cd $(notdir $@) && CC_FOR_TARGET=$(GLIBC_CC_FOR_TARGET) $</configure \
 		--target=$(LINUX_TUPLE) \
 		$(CONFIGURE_HOST) \
+		$(CONFIGURE_GCC_DEP_LIBS) \
+		$(CONFIGURE_GDBPKGVER) \
 		--prefix=$(INSTALL_DIR) \
 		--with-sysroot=$(SYSROOT) \
 		$(MULTILIB_FLAGS) \
@@ -394,7 +419,7 @@ stamps/build-gdb-linux: $(GDB_SRCDIR) $(GDB_SRC_GIT) $(PREPARATION_STAMP)
 		--disable-gold \
 		--disable-gprof
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
+	$(MAKE) -C $(notdir $@) $(INSTALL)
 	mkdir -p $(dir $@) && touch $@
 
 stamps/build-glibc-linux-headers: $(GLIBC_SRCDIR) $(GLIBC_SRC_GIT) stamps/build-gcc-linux-stage1
@@ -410,7 +435,7 @@ stamps/build-glibc-linux-headers: $(GLIBC_SRCDIR) $(GLIBC_SRC_GIT) stamps/build-
 	$(MAKE) -C $(notdir $@) install-headers
 	mkdir -p $(dir $@) && touch $@
 
-stamps/build-glibc-linux-%: $(GLIBC_SRCDIR) $(GLIBC_SRC_GIT) stamps/build-gcc-linux-stage1
+stamps/build-glibcthead-linux-%: $(GLIBC_SRCDIR) $(GLIBC_SRC_GIT) stamps/build-gcc-linux-stage1
 ifeq ($(MULTILIB_FLAGS),--enable-multilib)
 	$(eval $@_ARCH := $(word 4,$(subst -, ,$@)))
 	$(eval $@_ABI := $(word 5,$(subst -, ,$@)))
@@ -418,7 +443,44 @@ else
 	$(eval $@_ARCH := )
 	$(eval $@_ABI := )
 endif
-	$(eval $@_LIBDIRSUFFIX := $(if $($@_ABI),$(shell echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1/')/$($@_ABI),))
+	$(eval $@_LIBDIRSUFFIX := $(if $($@_ABI), $(shell if [ `echo $($@_ARCH) | grep "v_zfh_xtheadc" ` ] ;then  echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1v_xthead/'; elif [ `echo $($@_ARCH) | grep "v_zfh_xtheadc" ` ] ;then  echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1v_xthead/'; elif [ `echo $($@_ARCH) | grep "xtheadc" ` ] ;then echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1xthead/'; else echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1/';fi )/$($@_ABI),))
+	$(eval $@_XLEN := $(if $($@_ABI),$(shell echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1/'),$(XLEN)))
+	$(eval $@_CFLAGS := $(if $($@_ABI),-march=$($@_ARCH) -mabi=$($@_ABI),))
+	$(eval $@_LIBDIROPTS := $(if $@_LIBDIRSUFFIX,--libdir=/usr/lib$($@_LIBDIRSUFFIX) libc_cv_slibdir=/lib$($@_LIBDIRSUFFIX) libc_cv_rtlddir=/lib,))
+	rm -rf $@ $(notdir $@)
+	mkdir $(notdir $@)
+	cd $(notdir $@) && \
+		CC="$(GLIBC_CC_FOR_TARGET) $($@_CFLAGS)" \
+		CXX="$(GLIBC_CXX_FOR_TARGET) $($@_CFLAGS)"  \
+		CFLAGS="$(CFLAGS_FOR_TARGET) -g -O2 $($@_CFLAGS)" \
+		CXXFLAGS="$(CXXFLAGS_FOR_TARGET) -g -O2 $($@_CFLAGS)" \
+		ASFLAGS="$(ASFLAGS_FOR_TARGET) $($@_CFLAGS)" \
+		$</configure \
+		--host=$(call make_tuple,$($@_XLEN),linux-gnu) \
+		--prefix=/usr \
+		--disable-werror \
+		--enable-shared \
+		--enable-obsolete-rpc \
+		--with-headers=$(LINUX_HEADERS_SRCDIR) \
+		$(MULTILIB_FLAGS) \
+		--enable-kernel=3.0.0 \
+		$(GLIBC_TARGET_FLAGS) \
+		$($@_LIBDIROPTS)
+	$(MAKE) -C $(notdir $@)
+	+flock $(SYSROOT)/.lock $(MAKE) -C $(notdir $@) install install_root=$(SYSROOT)
+	mkdir -p $(dir $@) && touch $@
+
+stamps/build-glibc-linux-%: $(GLIBC_SRCDIR) $(GLIBC_SRC_GIT) stamps/build-gcc-linux-stage1 \
+			    $(addprefix stamps/build-glibcthead-linux-,$(THEAD32_MULTILIB_NAMES)) \
+			    $(addprefix stamps/build-glibcthead-linux-,$(THEAD64_MULTILIB_NAMES))
+ifeq ($(MULTILIB_FLAGS),--enable-multilib)
+	$(eval $@_ARCH := $(word 4,$(subst -, ,$@)))
+	$(eval $@_ABI := $(word 5,$(subst -, ,$@)))
+else
+	$(eval $@_ARCH := )
+	$(eval $@_ABI := )
+endif
+	$(eval $@_LIBDIRSUFFIX := $(if $($@_ABI), $(shell if [ `echo $($@_ARCH) | grep "v_zfh_xtheadc" ` ] ;then  echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1v_xthead/'; elif [ `echo $($@_ARCH) | grep "v_zfh_xtheadc" ` ] ;then  echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1v_xthead/'; elif [ `echo $($@_ARCH) | grep "xtheadc" ` ] ;then echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1xthead/'; else echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1/';fi )/$($@_ABI),))
 	$(eval $@_XLEN := $(if $($@_ABI),$(shell echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1/'),$(XLEN)))
 	$(eval $@_CFLAGS := $(if $($@_ABI),-march=$($@_ARCH) -mabi=$($@_ABI),))
 	$(eval $@_LIBDIROPTS := $(if $@_LIBDIRSUFFIX,--libdir=/usr/lib$($@_LIBDIRSUFFIX) libc_cv_slibdir=/lib$($@_LIBDIRSUFFIX) libc_cv_rtlddir=/lib,))
@@ -453,6 +515,7 @@ stamps/build-gcc-linux-stage1: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-binutil
 	cd $(notdir $@) && $</configure \
 		--target=$(LINUX_TUPLE) \
 		$(CONFIGURE_HOST) \
+		$(CONFIGURE_GCC_DEP_LIBS) \
 		--prefix=$(INSTALL_DIR) \
 		--with-sysroot=$(SYSROOT) \
 		--with-newlib \
@@ -485,13 +548,23 @@ stamps/build-gcc-linux-stage1: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-binutil
 	$(MAKE) -C $(notdir $@) inhibit-libc=true install-target-libgcc
 	mkdir -p $(dir $@) && touch $@
 
-stamps/build-gcc-linux-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) $(addprefix stamps/build-glibc-linux-,$(GLIBC_MULTILIB_NAMES)) \
+stamps/build-glibc-linux-rv64imafdc-lp64d-final: $(addprefix stamps/build-glibc-linux-,$(GLIBC_COMMON_MULTILIB_NAMES))
+
+ifeq ($(MULTILIB_FLAGS),--enable-multilib)
+GLIBC_GCC_STAGE2_DEPS := stamps/build-glibc-linux-rv64imafdc-lp64d-final
+else
+GLIBC_GCC_STAGE2_DEPS := $(addprefix stamps/build-glibc-linux-,$(GLIBC_COMMON_MULTILIB_NAMES))
+endif
+
+stamps/build-gcc-linux-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) $(GLIBC_GCC_STAGE2_DEPS) \
                                stamps/build-glibc-linux-headers
 	rm -rf $@ $(notdir $@)
 	mkdir $(notdir $@)
 	cd $(notdir $@) && $</configure \
 		--target=$(LINUX_TUPLE) \
 		$(CONFIGURE_HOST) \
+		$(CONFIGURE_GCC_DEP_LIBS) \
+		CXXFLAGS=$(GCC_CXXFLAGS) \
 		--prefix=$(INSTALL_DIR) \
 		--with-sysroot=$(SYSROOT) \
 		--with-pkgversion="$(GCCPKGVER)" \
@@ -516,7 +589,26 @@ stamps/build-gcc-linux-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) $(addprefix stamps/b
 		CFLAGS_FOR_TARGET="-O2 $(CFLAGS_FOR_TARGET)" \
 		CXXFLAGS_FOR_TARGET="-O2 $(CXXFLAGS_FOR_TARGET)"
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
+	$(MAKE) -C $(notdir $@) $(INSTALL)
+	# When build muiltilib toolchain, riscv64 and riscv32 has different omp.h
+	#	37,38c37,38
+	#	<   unsigned char _x[32]
+	#	<     __attribute__((__aligned__(8)));
+	#	---
+	#	>   unsigned char _x[16]
+	#	>     __attribute__((__aligned__(4)));
+	#	43,44c43,44
+	#	<   unsigned char _x[48]
+	#	<     __attribute__((__aligned__(8)));
+	#	---
+	#	>   unsigned char _x[24]
+	#	>     __attribute__((__aligned__(4)));
+	# So, reinstall riscv64 omp.h here to use larger spaces and alignment.
+	# However, having different spacing poses some risks for RISC-V32,
+	# although none have been discovered so far.
+	if [ -d $(notdir $@)/riscv64-unknown-linux-gnu/libgomp/ ]; then \
+		$(MAKE) -C $(notdir $@)/riscv64-unknown-linux-gnu/libgomp/ install-data-am; \
+	fi
 	cp -a $(INSTALL_DIR)/$(LINUX_TUPLE)/lib* $(SYSROOT)
 	mkdir -p $(dir $@) && touch $@
 
@@ -535,12 +627,15 @@ stamps/build-binutils-linux-native: $(BINUTILS_SRCDIR) $(BINUTILS_SRC_GIT) stamp
 		--disable-nls \
 		$(BINUTILS_NATIVE_FLAGS) \
 		--disable-gdb \
+		--disable-gdbserver \
 		--disable-sim \
 		--disable-libdecnumber \
+		--disable-libctf \
+		--disable-install-libbfd \
 		--disable-readline \
 		$(WITH_ISA_SPEC)
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
+	$(MAKE) -C $(notdir $@) $(INSTALL)
 	mkdir -p $(dir $@) && touch $@
 
 stamps/build-gcc-linux-native: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-gcc-linux-stage2 stamps/build-binutils-linux-native
@@ -551,6 +646,8 @@ stamps/build-gcc-linux-native: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-gcc-lin
 		--host=$(LINUX_TUPLE) \
 		--target=$(LINUX_TUPLE) \
 		$(CONFIGURE_HOST) \
+		--with-pkgversion="$(GCCPKGVER)" \
+		CXXFLAGS=$(GCC_CXXFLAGS) \
 		--prefix=$(INSTALL_DIR)/native \
 		--without-system-zlib \
 		--enable-shared \
@@ -561,7 +658,7 @@ stamps/build-gcc-linux-native: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-gcc-lin
 		--disable-libquadmath \
 		--disable-nls \
 		--disable-bootstrap \
-                --with-native-system-header-dir=$(INSTALL_DIR)/native/include \
+		--with-build-sysroot=$(SYSROOT) \
 		$(GCC_CHECKING_FLAGS) \
 		$(MULTILIB_FLAGS) \
 		$(WITH_ABI) \
@@ -570,8 +667,9 @@ stamps/build-gcc-linux-native: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-gcc-lin
 		$(WITH_ISA_SPEC) \
 		$(GCC_EXTRA_CONFIGURE_FLAGS)
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
-	cp -a $(INSTALL_DIR)/$(LINUX_TUPLE)/lib* $(SYSROOT)
+	$(MAKE) -C $(notdir $@) $(INSTALL)
+	mkdir -p $(INSTALL_DIR)/native/$(LINUX_TUPLE)/lib
+	mv $(INSTALL_DIR)/native/lib/lib* $(INSTALL_DIR)/native/$(LINUX_TUPLE)/lib/
 	mkdir -p $(dir $@) && touch $@
 
 #
@@ -594,9 +692,10 @@ stamps/build-binutils-newlib: $(BINUTILS_SRCDIR) $(BINUTILS_SRC_GIT) $(PREPARATI
 		--disable-sim \
 		--disable-libdecnumber \
 		--disable-readline \
+		--disable-warn-rwx-segments \
 		$(WITH_ISA_SPEC)
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
+	$(MAKE) -C $(notdir $@) $(INSTALL)
 	mkdir -p $(dir $@) && touch $@
 
 stamps/build-gdb-newlib: $(GDB_SRCDIR) $(GDB_SRC_GIT) $(PREPARATION_STAMP)
@@ -606,6 +705,8 @@ stamps/build-gdb-newlib: $(GDB_SRCDIR) $(GDB_SRC_GIT) $(PREPARATION_STAMP)
 	cd $(notdir $@) && CC_FOR_TARGET=$(NEWLIB_CC_FOR_TARGET) $</configure \
 		--target=$(NEWLIB_TUPLE) \
 		$(CONFIGURE_HOST) \
+		$(CONFIGURE_GCC_DEP_LIBS) \
+		$(CONFIGURE_GDBPKGVER) \
 		--prefix=$(INSTALL_DIR) \
 		@with_guile@ \
 		--disable-werror \
@@ -617,7 +718,7 @@ stamps/build-gdb-newlib: $(GDB_SRCDIR) $(GDB_SRC_GIT) $(PREPARATION_STAMP)
 		--disable-gold \
 		--disable-gprof
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
+	$(MAKE) -C $(notdir $@) $(INSTALL)
 	mkdir -p $(dir $@) && touch $@
 
 stamps/build-gcc-newlib-stage1: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-binutils-newlib
@@ -627,6 +728,7 @@ stamps/build-gcc-newlib-stage1: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-binuti
 	cd $(notdir $@) && $</configure \
 		--target=$(NEWLIB_TUPLE) \
 		$(CONFIGURE_HOST) \
+		$(CONFIGURE_GCC_DEP_LIBS) \
 		--prefix=$(INSTALL_DIR) \
 		--disable-shared \
 		--disable-threads \
@@ -666,8 +768,11 @@ stamps/build-newlib: $(NEWLIB_SRCDIR) $(NEWLIB_SRC_GIT) stamps/build-gcc-newlib-
 		--enable-newlib-io-long-long \
 		--enable-newlib-io-c99-formats \
 		--enable-newlib-register-fini \
-		CFLAGS_FOR_TARGET="-O2 -D_POSIX_MODE -ffunction-sections -fdata-sections $(CFLAGS_FOR_TARGET)" \
-		CXXFLAGS_FOR_TARGET="-O2 -D_POSIX_MODE -ffunction-sections -fdata-sections $(CXXFLAGS_FOR_TARGET)" \
+		--enable-newlib-retargetable-locking \
+		--enable-newlib-iconv \
+		--enable-newlib-iconv-encodings=big5,cp775,cp850,cp852,cp855,cp866,euc_jp,euc_kr,euc_tw,iso_8859_1,iso_8859_10,iso_8859_11,iso_8859_13,iso_8859_14,iso_8859_15,iso_8859_2,iso_8859_3,iso_8859_4,iso_8859_5,iso_8859_6,iso_8859_7,iso_8859_8,iso_8859_9,iso_ir_111,koi8_r,koi8_ru,koi8_u,koi8_uni,ucs_2,ucs_2_internal,ucs_2be,ucs_2le,ucs_4,ucs_4_internal,ucs_4be,ucs_4le,us_ascii,utf_16,utf_16be,utf_16le,utf_8,win_1250,win_1251,win_1252,win_1253,win_1254,win_1255,win_1256,win_1257,win_1258 \
+		CFLAGS_FOR_TARGET="-O2 -D_POSIX_MODE -ffunction-sections -fdata-sections -Wno-implicit-function-declaration -Wno-int-conversion $(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="-O2 -D_POSIX_MODE -ffunction-sections -fdata-sections -Wno-implicit-function-declaration -Wno-int-conversion $(CXXFLAGS_FOR_TARGET)" \
 		$(NEWLIB_TARGET_FLAGS)
 	$(MAKE) -C $(notdir $@)
 	$(MAKE) -C $(notdir $@) install
@@ -691,8 +796,9 @@ stamps/build-newlib-nano: $(NEWLIB_SRCDIR) $(NEWLIB_SRC_GIT) stamps/build-gcc-ne
 		--enable-newlib-nano-formatted-io \
 		--disable-newlib-supplied-syscalls \
 		--disable-nls \
-		CFLAGS_FOR_TARGET="-Os -ffunction-sections -fdata-sections $(CFLAGS_FOR_TARGET)" \
-		CXXFLAGS_FOR_TARGET="-Os -ffunction-sections -fdata-sections $(CXXFLAGS_FOR_TARGET)" \
+		--enable-newlib-retargetable-locking \
+		CFLAGS_FOR_TARGET="-Os -ffunction-sections -fdata-sections -Wno-implicit-function-declaration -Wno-int-conversion $(CFLAGS_FOR_TARGET)" \
+		CXXFLAGS_FOR_TARGET="-Os -ffunction-sections -fdata-sections -Wno-implicit-function-declaration -Wno-int-conversion $(CXXFLAGS_FOR_TARGET)" \
 		$(NEWLIB_TARGET_FLAGS)
 	$(MAKE) -C $(notdir $@)
 	$(MAKE) -C $(notdir $@) install
@@ -733,9 +839,12 @@ stamps/build-gcc-newlib-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-newlib
 	cd $(notdir $@) && $</configure \
 		--target=$(NEWLIB_TUPLE) \
 		$(CONFIGURE_HOST) \
+		$(CONFIGURE_GCC_DEP_LIBS) \
+		CXXFLAGS=$(GCC_CXXFLAGS) \
+		@build_libgcctf@ \
 		--prefix=$(INSTALL_DIR) \
 		--disable-shared \
-		--disable-threads \
+		--enable-threads=posix \
 		--enable-languages=c,c++ \
 		--with-pkgversion="$(GCCPKGVER)" \
 		@with_system_zlib@ \
@@ -757,10 +866,10 @@ stamps/build-gcc-newlib-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-newlib
 		$(WITH_TUNE) \
 		$(WITH_ISA_SPEC) \
 		$(GCC_EXTRA_CONFIGURE_FLAGS) \
-		CFLAGS_FOR_TARGET="-Os $(CFLAGS_FOR_TARGET)" \
-		CXXFLAGS_FOR_TARGET="-Os $(CXXFLAGS_FOR_TARGET)"
+		CFLAGS_FOR_TARGET="-Os $(CFLAGS_FOR_TARGET) -D_POSIX_THREADS -D_UNIX98_THREAD_MUTEX_ATTRIBUTES" \
+		CXXFLAGS_FOR_TARGET="-Os $(CXXFLAGS_FOR_TARGET) -D_POSIX_THREADS -D_UNIX98_THREAD_MUTEX_ATTRIBUTES"
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
+	$(MAKE) -C $(notdir $@) $(INSTALL)
 	mkdir -p $(dir $@) && touch $@
 
 #
@@ -788,7 +897,33 @@ stamps/build-binutils-musl: $(BINUTILS_SRCDIR) $(BINUTILS_SRC_GIT) $(PREPARATION
 		--disable-readline \
 		$(WITH_ISA_SPEC)
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
+	$(MAKE) -C $(notdir $@) $(INSTALL)
+	mkdir -p $(dir $@) && touch $@
+
+stamps/build-gdb-musl: $(GDB_SRCDIR) $(GDB_SRC_GIT)
+	rm -rf $@ $(notdir $@)
+	mkdir $(notdir $@)
+# CC_FOR_TARGET is required for the ld testsuite.
+	cd $(notdir $@) && CC_FOR_TARGET=$(GLIBC_CC_FOR_TARGET) $</configure \
+		--target=$(MUSL_TUPLE) \
+		$(CONFIGURE_HOST) \
+		$(CONFIGURE_GCC_DEP_LIBS) \
+		$(CONFIGURE_GDBPKGVER) \
+		--prefix=$(INSTALL_DIR) \
+		--with-sysroot=$(SYSROOT) \
+		$(MULTILIB_FLAGS) \
+		@with_guile@ \
+		--disable-werror \
+		--disable-nls \
+		$(GDB_TARGET_FLAGS) \
+		--enable-gdb \
+		--disable-gas \
+		--disable-binutils \
+		--disable-ld \
+		--disable-gold \
+		--disable-gprof
+	$(MAKE) -C $(notdir $@)
+	$(MAKE) -C $(notdir $@) $(INSTALL)
 	mkdir -p $(dir $@) && touch $@
 
 stamps/build-gcc-musl-stage1: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-binutils-musl \
@@ -799,6 +934,7 @@ stamps/build-gcc-musl-stage1: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-binutils
 	cd $(notdir $@) && $</configure \
 		--target=$(MUSL_TUPLE) \
 		$(CONFIGURE_HOST) \
+		$(CONFIGURE_GCC_DEP_LIBS) \
 		--prefix=$(INSTALL_DIR) \
 		--without-headers \
 		--disable-shared \
@@ -815,7 +951,7 @@ stamps/build-gcc-musl-stage1: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-binutils
 		--disable-bootstrap \
 		--src=$(gccsrcdir) \
 		$(GCC_CHECKING_FLAGS) \
-		--disable-multilib \
+		$(GCC_MULTILIB_FLAGS) \
 		$(WITH_ABI) \
 		$(WITH_ARCH) \
 		$(WITH_TUNE) \
@@ -842,26 +978,74 @@ stamps/build-musl-linux-headers: $(MUSL_SRCDIR) $(MUSL_SRC_GIT) stamps/build-gcc
 	$(MAKE) -C $(notdir $@) install-headers
 	mkdir -p $(dir $@) && touch $@
 
-stamps/build-musl-linux: $(MUSL_SRCDIR) $(MUSL_SRC_GIT) stamps/build-gcc-musl-stage1
+stamps/build-muslthead-linux-%: $(MUSL_SRCDIR) $(MUSL_SRC_GIT) stamps/build-gcc-musl-stage1
+ifeq ($(MULTILIB_FLAGS),--enable-multilib)
+	$(eval $@_ARCH := $(word 4,$(subst -, ,$@)))
+	$(eval $@_ABI := $(word 5,$(subst -, ,$@)))
+else
+	$(eval $@_ARCH := )
+	$(eval $@_ABI := )
+endif
+	$(eval $@_LIBDIRSUFFIX := $(if $($@_ABI), $(shell if [ `echo $($@_ARCH) | grep "v_zfh_xtheadc" ` ] ;then  echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1v_xthead/'; elif [ `echo $($@_ARCH) | grep "v_zfh_xtheadc" ` ] ;then  echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1v_xthead/'; elif [ `echo $($@_ARCH) | grep "xtheadc" ` ] ;then echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1xthead/'; else echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1/';fi )/$($@_ABI),))
+	$(eval $@_XLEN := $(if $($@_ABI),$(shell echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1/'),$(XLEN)))
+	$(eval $@_CFLAGS := $(if $($@_ABI),-march=$($@_ARCH) -mabi=$($@_ABI),))
+	$(eval $@_LIBDIROPTS := $(if $@_LIBDIRSUFFIX,--libdir=/usr/lib$($@_LIBDIRSUFFIX) --syslibdir=/lib,))
 	rm -rf $@ $(notdir $@)
 	mkdir $(notdir $@)
 	cd $(notdir $@) && \
 		CC="$(MUSL_CC_FOR_TARGET) $($@_CFLAGS)" \
 		CXX="$(MUSL_CXX_FOR_TARGET) $($@_CFLAGS)" \
-		CFLAGS="$(CFLAGS_FOR_TARGET) -O2 $($@_CFLAGS)" \
-		CXXFLAGS="$(CXXFLAGS_FOR_TARGET) -O2 $($@_CFLAGS)" \
+		CFLAGS="$(CFLAGS_FOR_TARGET) -g -O2 $($@_CFLAGS)" \
+		CXXFLAGS="$(CXXFLAGS_FOR_TARGET) -g -O2 $($@_CFLAGS)" \
 		ASFLAGS="$(ASFLAGS_FOR_TARGET) $($@_CFLAGS)" \
+		CROSS_COMPILE="$(MUSL_TUPLE)-" \
 		$</configure \
-		--host=$(MUSL_TUPLE) \
-		--prefix=$(SYSROOT) \
+		--host=$(call make_tuple,$($@_XLEN),linux-musl) \
+		--prefix=/usr \
+		--ldsoreldir=../ \
 		--disable-werror \
 		--enable-shared \
-		$(MUSL_TARGET_FLAGS)
+		$(MUSL_TARGET_FLAGS) \
+		$($@_LIBDIROPTS)
 	$(MAKE) -C $(notdir $@)
-	+flock $(SYSROOT)/.lock $(MAKE) -C $(notdir $@) install
+	+flock $(SYSROOT)/.lock $(MAKE) -C $(notdir $@) install DESTDIR=$(SYSROOT)
 	mkdir -p $(dir $@) && touch $@
 
-stamps/build-gcc-musl-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-musl-linux \
+stamps/build-musl-linux-%: $(MUSL_SRCDIR) $(MUSL_SRC_GIT) stamps/build-gcc-musl-stage1 \
+			   $(addprefix stamps/build-muslthead-linux-,$(THEAD$(XLEN)_MULTILIB_NAMES))
+ifeq ($(MULTILIB_FLAGS),--enable-multilib)
+	$(eval $@_ARCH := $(word 4,$(subst -, ,$@)))
+	$(eval $@_ABI := $(word 5,$(subst -, ,$@)))
+else
+	$(eval $@_ARCH := )
+	$(eval $@_ABI := )
+endif
+	$(eval $@_LIBDIRSUFFIX := $(if $($@_ABI), $(shell if [ `echo $($@_ARCH) | grep "v0p7_zfh_xtheadc" ` ] ;then  echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1v0p7_xthead/'; elif [ `echo $($@_ARCH) | grep "v_zfh_xtheadc" ` ] ;then  echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1v_xthead/'; elif [ `echo $($@_ARCH) | grep "xtheadc" ` ] ;then echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1xthead/'; else echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1/';fi )/$($@_ABI),))
+	$(eval $@_XLEN := $(if $($@_ABI),$(shell echo $($@_ARCH) | sed 's/.*rv\([0-9]*\).*/\1/'),$(XLEN)))
+	$(eval $@_CFLAGS := $(if $($@_ABI),-march=$($@_ARCH) -mabi=$($@_ABI),))
+	$(eval $@_LIBDIROPTS := $(if $@_LIBDIRSUFFIX,--libdir=/usr/lib$($@_LIBDIRSUFFIX) --syslibdir=/lib,))
+	rm -rf $@ $(notdir $@)
+	mkdir $(notdir $@)
+	cd $(notdir $@) && \
+		CC="$(MUSL_CC_FOR_TARGET) $($@_CFLAGS)" \
+		CXX="$(MUSL_CXX_FOR_TARGET) $($@_CFLAGS)" \
+		CFLAGS="$(CFLAGS_FOR_TARGET) -g -O2 $($@_CFLAGS)" \
+		CXXFLAGS="$(CXXFLAGS_FOR_TARGET) -g -O2 $($@_CFLAGS)" \
+		ASFLAGS="$(ASFLAGS_FOR_TARGET) $($@_CFLAGS)" \
+		CROSS_COMPILE="$(MUSL_TUPLE)-" \
+		$</configure \
+		--host=$(call make_tuple,$($@_XLEN),linux-musl) \
+		--prefix=/usr \
+		--ldsoreldir=../ \
+		--disable-werror \
+		--enable-shared \
+		$(MUSL_TARGET_FLAGS) \
+		$($@_LIBDIROPTS)
+	$(MAKE) -C $(notdir $@)
+	+flock $(SYSROOT)/.lock $(MAKE) -C $(notdir $@) install DESTDIR=$(SYSROOT)
+	mkdir -p $(dir $@) && touch $@
+
+stamps/build-gcc-musl-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) $(addprefix stamps/build-musl-linux-,$(MUSL$(XLEN)_MULTILIB_NAMES)) \
                                stamps/build-musl-linux-headers
 	rm -rf $@ $(notdir $@)
 	mkdir $(notdir $@)
@@ -870,6 +1054,9 @@ stamps/build-gcc-musl-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-musl-lin
 	cd $(notdir $@) && $</configure \
 		--target=$(MUSL_TUPLE) \
 		$(CONFIGURE_HOST) \
+		$(CONFIGURE_GCC_DEP_LIBS) \
+		--with-pkgversion="$(GCCPKGVER)" \
+		CXXFLAGS=$(GCC_CXXFLAGS) \
 		--prefix=$(INSTALL_DIR) \
 		--with-sysroot=$(SYSROOT) \
 		@with_system_zlib@ \
@@ -884,7 +1071,7 @@ stamps/build-gcc-musl-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-musl-lin
 		--disable-bootstrap \
 		--src=$(gccsrcdir) \
 		$(GCC_CHECKING_FLAGS) \
-		--disable-multilib \
+		$(GCC_MULTILIB_FLAGS) \
 		$(WITH_ABI) \
 		$(WITH_ARCH) \
 		$(WITH_TUNE) \
@@ -893,11 +1080,30 @@ stamps/build-gcc-musl-stage2: $(GCC_SRCDIR) $(GCC_SRC_GIT) stamps/build-musl-lin
 		CFLAGS_FOR_TARGET="-O2 $(CFLAGS_FOR_TARGET)" \
 		CXXFLAGS_FOR_TARGET="-O2 $(CXXFLAGS_FOR_TARGET)"
 	$(MAKE) -C $(notdir $@)
-	$(MAKE) -C $(notdir $@) install
+	$(MAKE) -C $(notdir $@) $(INSTALL)
 	cp -a $(INSTALL_DIR)/$(MUSL_TUPLE)/lib* $(SYSROOT)
 	mkdir -p $(dir $@) && touch $@
 
-stamps/build-spike: $(SPIKE_SRCDIR) $(SPIKE_SRC_GIT) $(PREPARATION_STAMP)
+.PHONY: report-gcc-musl
+report-gcc-musl: stamps/check-gcc-musl
+	$(srcdir)/scripts/testsuite-filter gcc musl $(srcdir)/test/allowlist `find build-gcc-musl-stage2/gcc/testsuite/ -name *.sum |paste -sd "," -`
+
+.PHONY: report-binutils-musl
+report-binutils-musl: stamps/check-binutils-musl
+	$(srcdir)/scripts/testsuite-filter binutils musl \
+	    $(srcdir)/test/allowlist \
+	    `find build-binutils-musl/ -name *.sum |paste -sd "," -`
+
+stamps/check-gcc-musl: stamps/build-gcc-musl-stage2 $(SIM_STAMP) stamps/build-dejagnu
+	$(SIM_PREPARE) $(MAKE) -C build-gcc-musl-stage2 check-gcc "RUNTESTFLAGS=--target_board='$(MUSL_TARGET_BOARDS)' $(REGRESSION_TEST_LIST_GCC)"
+	mkdir -p $(dir $@)
+	date > $@
+
+stamps/check-binutils-musl: stamps/build-gcc-musl-stage2 $(SIM_STAMP) stamps/build-dejagnu
+	$(SIM_PREPARE) $(MAKE) -C build-binutils-musl check-binutils check-gas check-ld -k "RUNTESTFLAGS=--target_board='$(MUSL_TARGET_BOARDS)'" || true
+	date > $@
+
+stamps/build-spike: $(SPIKE_SRCDIR) $(SPIKE_SRC_GIT)
 	rm -rf $@ $(notdir $@)
 	mkdir $(notdir $@)
 	cd $(notdir $@) && $</configure \
@@ -937,6 +1143,7 @@ stamps/build-qemu: $(QEMU_SRCDIR) $(QEMU_SRC_GIT) $(PREPARATION_STAMP)
 	rm -rf $@ $(notdir $@)
 	mkdir $(notdir $@)
 	cd $(notdir $@) && $</configure \
+		--disable-docs \
 		--prefix=$(INSTALL_DIR) \
 		--target-list=$(QEMU_TARGETS) \
 		--interp-prefix=$(INSTALL_DIR)/sysroot \
@@ -1014,17 +1221,17 @@ stamps/build-dejagnu: $(DEJAGNU_SRCDIR) $(DEJAGNU_SRC_GIT) $(PREPARATION_STAMP)
 	date > $@
 
 stamps/check-gcc-newlib: stamps/build-gcc-newlib-stage2 $(SIM_STAMP) stamps/build-dejagnu
-	$(SIM_PREPARE) $(MAKE) -C build-gcc-newlib-stage2 check-gcc "RUNTESTFLAGS=$(RUNTESTFLAGS) --target_board='$(NEWLIB_TARGET_BOARDS)'"
+	$(SIM_PREPARE) $(MAKE) -C build-gcc-newlib-stage2 check-gcc "RUNTESTFLAGS=$(RUNTESTFLAGS) --target_board='$(NEWLIB_TARGET_BOARDS)' $(REGRESSION_TEST_LIST_GCC)"
 	mkdir -p $(dir $@)
 	date > $@
 
 stamps/check-gcc-newlib-nano: stamps/build-gcc-newlib-stage2 $(SIM_STAMP) stamps/build-dejagnu
-	$(SIM_PREPARE) $(MAKE) -C build-gcc-newlib-stage2 check-gcc "RUNTESTFLAGS=$(RUNTESTFLAGS) --target_board='$(NEWLIB_NANO_TARGET_BOARDS)'"
+	$(SIM_PREPARE) $(MAKE) -C build-gcc-newlib-stage2 check-gcc "RUNTESTFLAGS=$(RUNTESTFLAGS) --target_board='$(NEWLIB_NANO_TARGET_BOARDS)' $(REGRESSION_TEST_LIST_GCC)"
 	mkdir -p $(dir $@)
 	date > $@
 
 stamps/check-gcc-linux: stamps/build-gcc-linux-stage2 $(SIM_STAMP) stamps/build-dejagnu
-	$(SIM_PREPARE) $(MAKE) -C build-gcc-linux-stage2 check-gcc "RUNTESTFLAGS=$(RUNTESTFLAGS) --target_board='$(GLIBC_TARGET_BOARDS)'"
+	$(SIM_PREPARE) $(MAKE) -C build-gcc-linux-stage2 check-gcc "RUNTESTFLAGS=$(RUNTESTFLAGS) --target_board='$(GLIBC_TARGET_BOARDS)' $(REGRESSION_TEST_LIST_GCC)"
 	mkdir -p $(dir $@)
 	date > $@
 
@@ -1133,7 +1340,7 @@ report-binutils-linux: stamps/check-binutils-linux
 	    `find build-binutils-linux/ -name *.sum |paste -sd "," -`
 
 clean:
-	rm -rf build-* install-* stamps install-newlib-nano
+	rm -rf build-* stamps install-newlib-nano
 
 .PHONY: report-gdb-newlib report-gdb-newlib-nano
 report-gdb-newlib: stamps/check-gdb-newlib

@@ -52,6 +52,11 @@ def get_white_list_files(raw_arch, abi, libc, white_list_base_dir):
             if debug:
                 print ("Got: %s" % filename)
             white_list_files.append(filepath)
+        xt_filepath = filepath[:-4] + ".xt.log"
+        if os.path.exists(xt_filepath):
+            if debug:
+                print ("Got: %s" % xt_filepath)
+            white_list_files.append(xt_filepath)
 
     libc_filename = "common.log"
     append_if_exist(libc_filename)
