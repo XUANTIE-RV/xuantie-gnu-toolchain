@@ -241,3 +241,9 @@ Here is the list of configure option for specify source tree:
     --with-gdb-src
     --with-linux-headers-src
 
+
+## Related Resources
+
+For additional documentation and resources related to RISC-V toolchains and software development:
+
+* [XuanTie Software Resources](https://www.xrvm.cn/overview/software)
